@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white text-pinterest-black;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-pinterest-primary hover:bg-pinterest-primary-hover text-white font-semibold py-3 px-4 rounded-full transition-colors;
+  }
+
+  .btn-secondary {
+    @apply bg-pinterest-light-gray hover:bg-gray-300 text-pinterest-black font-semibold py-3 px-4 rounded-full transition-colors;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 border-2 border-gray-300 rounded-2xl focus:border-pinterest-primary focus:outline-none transition-colors;
+  }
+}
+
+/* Masonry Grid Styles */
+.masonry-grid {
+  display: flex;
+  width: 100%;
+}
+
+.masonry-column {
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px;
+}
+
+.masonry-item {
+  margin-bottom: 16px;
+  break-inside: avoid;
+}
