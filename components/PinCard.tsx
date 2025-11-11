@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Heart, MessageCircle, Share2 } from 'lucide-react'
+import { Heart, MessageCircle, Share2, X } from 'lucide-react'
 
 interface PinCardProps {
   pin: {
@@ -21,9 +21,11 @@ interface PinCardProps {
       comments: number
     }
   }
+  showRemove?: boolean
+  onRemove?: (pinId: string) => void
 }
 
-export default function PinCard({ pin }: PinCardProps) {
+export default function PinCard({ pin, showRemove, onRemove }: PinCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [liked, setLiked] = useState(false)
   const [likesCount, setLikesCount] = useState(pin._count.likes)
@@ -44,6 +46,14 @@ export default function PinCard({ pin }: PinCardProps) {
       }
     } catch (error) {
       console.error('Erreur like:', error)
+    }
+  }
+
+  const handleRemove = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (onRemove) {
+      onRemove(pin.id)
     }
   }
 
@@ -68,10 +78,20 @@ export default function PinCard({ pin }: PinCardProps) {
           {/* Overlay au survol */}
           {isHovered && (
             <div className="absolute inset-0 bg-black bg-opacity-40 transition-opacity">
-              <div className="absolute top-3 right-3">
-                <button className="btn-primary px-4 py-2 text-sm">
-                  Enregistrer
-                </button>
+              <div className="absolute top-3 right-3 flex gap-2">
+                {showRemove ? (
+                  <button
+                    onClick={handleRemove}
+                    className="p-2 rounded-full bg-white hover:bg-gray-100 transition-colors text-red-600"
+                    title="Retirer du tableau"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                ) : (
+                  <button className="btn-primary px-4 py-2 text-sm">
+                    Enregistrer
+                  </button>
+                )}
               </div>
 
               <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">

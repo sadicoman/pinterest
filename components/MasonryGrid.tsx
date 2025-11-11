@@ -21,9 +21,11 @@ interface Pin {
 
 interface MasonryGridProps {
   pins: Pin[]
+  showRemove?: boolean
+  onRemovePin?: (pinId: string) => void
 }
 
-export default function MasonryGrid({ pins }: MasonryGridProps) {
+export default function MasonryGrid({ pins, showRemove, onRemovePin }: MasonryGridProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [columns, setColumns] = useState(4)
 
@@ -57,7 +59,7 @@ export default function MasonryGrid({ pins }: MasonryGridProps) {
         <div key={columnIndex} className="masonry-column" style={{ flex: 1 }}>
           {columnPins.map((pin) => (
             <div key={pin.id} className="masonry-item">
-              <PinCard pin={pin} />
+              <PinCard pin={pin} showRemove={showRemove} onRemove={onRemovePin} />
             </div>
           ))}
         </div>
