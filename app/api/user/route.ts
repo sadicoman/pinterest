@@ -1,0 +1,142 @@
+import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { z } from 'zod'
+
+const updateProfileSchema = z.object({
+  name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères').optional(),
+  bio: z.string().max(500, 'La bio ne peut pas dépasser 500 caractères').optional(),
+  image: z.string().url('URL d\'image invalide').optional().nullable(),
+})
+
+// GET - Récupérer le profil de l'utilisateur connecté
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Non authentifié' },
+        { status: 401 }
+      )
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        bio: true,
+        createdAt: true,
+        _count: {
+          select: {
+            pins: true,
+            boards: true,
+            followers: true,
+            following: true,
+          },
+        },
+      },
+    })
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Utilisateur introuvable' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(user)
+  } catch (error) {
+    console.error('Erreur GET user:', error)
+    return NextResponse.json(
+      { error: 'Erreur lors de la récupération du profil' },
+      { status: 500 }
+    )
+  }
+}
+
+// PATCH - Mettre à jour le profil
+export async function PATCH(request: Request) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Non authentifié' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const validatedData = updateProfileSchema.parse(body)
+
+    // Mettre à jour l'utilisateur
+    const updatedUser = await prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        ...(validatedData.name !== undefined && { name: validatedData.name }),
+        ...(validatedData.bio !== undefined && { bio: validatedData.bio }),
+        ...(validatedData.image !== undefined && { image: validatedData.image }),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        bio: true,
+      },
+    })
+
+    return NextResponse.json(
+      { message: 'Profil mis à jour avec succès', user: updatedUser },
+      { status: 200 }
+    )
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      )
+    }
+
+    console.error('Erreur PATCH user:', error)
+    return NextResponse.json(
+      { error: 'Erreur lors de la mise à jour du profil' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE - Supprimer le compte utilisateur
+export async function DELETE() {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Non authentifié' },
+        { status: 401 }
+      )
+    }
+
+    // Supprimer l'utilisateur (cascade supprimera pins, boards, etc.)
+    await prisma.user.delete({
+      where: { id: session.user.id },
+    })
+
+    return NextResponse.json(
+      { message: 'Compte supprimé avec succès' },
+      { status: 200 }
+    )
+  } catch (error) {
+    console.error('Erreur DELETE user:', error)
+    return NextResponse.json(
+      { error: 'Erreur lors de la suppression du compte' },
+      { status: 500 }
+    )
+  }
+}
