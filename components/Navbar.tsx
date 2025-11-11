@@ -76,10 +76,24 @@ export default function Navbar() {
 
                 <Link
                   href="/profile"
-                  className="p-3 rounded-full hover:bg-pinterest-light-gray transition-colors"
+                  className="p-2 rounded-full hover:bg-pinterest-light-gray transition-colors"
                   title="Profil"
                 >
-                  <User className="w-6 h-6" />
+                  {session.user?.image ? (
+                    <div className="w-8 h-8 rounded-full overflow-hidden">
+                      <img
+                        src={session.user.image}
+                        alt={session.user.name || 'User'}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-semibold text-white">
+                        {session.user?.name?.[0]?.toUpperCase() || 'U'}
+                      </span>
+                    </div>
+                  )}
                 </Link>
 
                 <button

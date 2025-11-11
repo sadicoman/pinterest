@@ -7,7 +7,7 @@ import { z } from 'zod'
 const updateProfileSchema = z.object({
   name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères').optional(),
   bio: z.string().max(500, 'La bio ne peut pas dépasser 500 caractères').optional(),
-  image: z.string().url('URL d\'image invalide').optional().nullable(),
+  image: z.string().optional().nullable(),
 })
 
 // GET - Récupérer le profil de l'utilisateur connecté

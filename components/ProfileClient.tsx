@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSession } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Camera, Edit2, Plus, Grid, Bookmark } from 'lucide-react'
@@ -57,6 +58,7 @@ interface ProfileClientProps {
 }
 
 export default function ProfileClient({ user, pins, boards }: ProfileClientProps) {
+  const { update } = useSession()
   const [activeTab, setActiveTab] = useState<'pins' | 'boards'>('pins')
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -64,6 +66,7 @@ export default function ProfileClient({ user, pins, boards }: ProfileClientProps
     bio: user.bio || '',
   })
   const [loading, setLoading] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -91,6 +94,60 @@ export default function ProfileClient({ user, pins, boards }: ProfileClientProps
     }
   }
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Vérifier que c'est une image
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez sélectionner une image')
+      return
+    }
+
+    setUploadingImage(true)
+
+    try {
+      // 1. Upload de l'image
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!uploadRes.ok) {
+        throw new Error("Erreur lors de l'upload de l'image")
+      }
+
+      const { imageUrl } = await uploadRes.json()
+
+      // 2. Mettre à jour le profil avec la nouvelle image
+      const updateRes = await fetch('/api/user', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image: imageUrl }),
+      })
+
+      if (!updateRes.ok) {
+        throw new Error('Erreur lors de la mise à jour du profil')
+      }
+
+      // Rafraîchir la session NextAuth pour mettre à jour l'image dans la navbar
+      await update()
+
+      // Recharger la page pour afficher la nouvelle image
+      window.location.reload()
+    } catch (error) {
+      console.error(error)
+      alert('Erreur lors de la mise à jour de la photo')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   return (
     <div className="max-w-screen-xl mx-auto py-8">
       {/* Header du profil */}
@@ -103,7 +160,7 @@ export default function ProfileClient({ user, pins, boards }: ProfileClientProps
               alt={user.name || 'User'}
               width={120}
               height={120}
-              className="rounded-full"
+              className="rounded-full object-cover"
             />
           ) : (
             <div className="w-30 h-30 bg-gray-300 rounded-full flex items-center justify-center">
@@ -112,9 +169,25 @@ export default function ProfileClient({ user, pins, boards }: ProfileClientProps
               </span>
             </div>
           )}
-          <button className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors">
-            <Camera className="w-5 h-5" />
-          </button>
+          <label
+            htmlFor="profile-image-upload"
+            className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors cursor-pointer"
+            title={uploadingImage ? 'Upload en cours...' : 'Changer la photo'}
+          >
+            {uploadingImage ? (
+              <div className="w-5 h-5 border-2 border-pinterest-primary border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Camera className="w-5 h-5" />
+            )}
+          </label>
+          <input
+            id="profile-image-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+            disabled={uploadingImage}
+          />
         </div>
 
         {/* Nom et bio */}
